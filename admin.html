@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Админ — Мөнхдөлгөөн</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="admin.css"/>
+</head>
+<body>
+
+  <!-- ══ LOGIN SCREEN ══ -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <div class="login-logo">М.Д <span>Админ</span></div>
+
+      <!-- Step 1: Gmail -->
+      <div id="step1">
+        <h2 class="login-title">Нэвтрэх</h2>
+        <p class="login-sub">Зөвшөөрөгдсөн Gmail-аар нэвтэрнэ</p>
+        <div class="form-group">
+          <label class="form-label">Gmail хаяг</label>
+          <input type="email" id="gmailInput" class="form-input" placeholder="ta@gmail.com"/>
+        </div>
+        <button class="btn-login" id="sendCodeBtn">Код илгээх →</button>
+        <p class="login-error" id="gmailError"></p>
+        <a href="index.html" class="back-link">← Буцах</a>
+      </div>
+
+      <!-- Step 2: Code -->
+      <div id="step2" style="display:none">
+        <h2 class="login-title">Код оруулах</h2>
+        <p class="login-sub" id="codeSentMsg">Gmail-д 6 оронтой код илгээлээ</p>
+        <div class="code-inputs" id="codeInputs">
+          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
+          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
+          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
+          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
+          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
+          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
+        </div>
+        <button class="btn-login" id="verifyCodeBtn" style="margin-top:1.5rem">Баталгаажуулах →</button>
+        <p class="login-error" id="codeError"></p>
+        <div style="margin-top:1rem;display:flex;justify-content:space-between">
+          <button class="link-btn" id="resendBtn">Дахин илгээх</button>
+          <button class="link-btn" id="backToStep1">← Буцах</button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="loginLoading" style="display:none;text-align:center;padding:2rem 0">
+        <div class="spinner"></div>
+        <p style="color:var(--muted);font-size:.78rem;margin-top:1rem">Шалгаж байна...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ADMIN PANEL ══ -->
+  <div id="adminPanel" style="display:none">
+
+    <aside class="sidebar">
+      <div class="sidebar-logo">М.Д <span>Админ</span></div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-tab="dashboard"><span class="nav-icon">📊</span><span class="nav-text">Хяналтын самбар</span></a>
+        <a href="#" class="nav-item" data-tab="visitors"><span class="nav-icon">👁</span><span class="nav-text">Үзэлтүүд</span></a>
+        <a href="#" class="nav-item" data-tab="devices"><span class="nav-icon">📱</span><span class="nav-text">Төхөөрөмж</span></a>
+        <a href="#" class="nav-item" data-tab="projects"><span class="nav-icon">🗂</span><span class="nav-text">Төслүүд</span></a>
+        <a href="#" class="nav-item" data-tab="messages"><span class="nav-icon">✉️</span><span class="nav-text">Мессежүүд</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="admin-email-badge" id="adminEmailBadge"></div>
+        <a href="index.html" class="sidebar-link">← Сайт руу буцах</a>
+        <button class="btn-logout" id="logoutBtn">Гарах</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- Dashboard -->
+      <section id="tab-dashboard" class="tab active">
+        <div class="page-header">
+          <h1 class="page-title">Хяналтын самбар</h1>
+          <p class="page-sub" id="dashGreet"></p>
+        </div>
+        <div class="stats-row" id="statsRow"></div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">Сүүлийн 7 хоног (өдрөөр)</div>
+            <div class="chart-wrap" id="dailyChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Өнөөдөр цагаар</div>
+            <div class="chart-wrap" id="hourlyChart"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visitors -->
+      <section id="tab-visitors" class="tab">
+        <div class="page-header">
+          <h1 class="page-title">Үзэлтүүд</h1>
+          <p class="page-sub">Сайтад орсон бүх зочдын бүртгэл (Firebase)</p>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <span>Огноо & Цаг</span>
+            <span>Төхөөрөмж</span>
+            <span>Browser</span>
+          </div>
+          <div id="visitorsList"><div class="empty-msg">Ачааллаж байна...</div></div>
+        </div>
+      </section>
+
+      <!-- Devices -->
+      <section id="tab-devices" class="tab">
+        <div class="page-header">
+          <h1 class="page-title">Төхөөрөмж</h1>
+          <p class="page-sub">Ямар төхөөрөмжөөр орж үзсэн</p>
+        </div>
+        <div class="device-grid" id="deviceGrid"></div>
+        <div class="chart-card" style="margin-top:2rem">
+          <div class="chart-title">Төхөөрөмжийн харьцаа</div>
+          <div id="deviceBars"></div>
+        </div>
+      </section>
+
+      <!-- Projects -->
+      <section id="tab-projects" class="tab">
+        <div class="page-header">
+          <h1 class="page-title">Төслүүд</h1>
+          <p class="page-sub">Нэмэх, засах, устгах — Firebase-д хадгалагдана</p>
+        </div>
+        <button class="btn-add" id="openAddProject">+ Шинэ төсөл нэмэх</button>
+        <div id="projectsList" style="margin-top:1.5rem">
+          <div class="empty-msg">Ачааллаж байна...</div>
+        </div>
+      </section>
+
+      <!-- Messages -->
+      <section id="tab-messages" class="tab">
+        <div class="page-header">
+          <h1 class="page-title">Мессежүүд</h1>
+          <p class="page-sub">Холбоо барих хэсгээс ирсэн мессежүүд</p>
+        </div>
+        <div id="messagesList"><div class="empty-msg">Ачааллаж байна...</div></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Add/Edit Project Modal -->
+  <div id="projectFormModal" class="modal-overlay">
+    <div class="modal-box">
+      <button class="modal-close" id="closeProjectForm">✕</button>
+      <h3 class="modal-title" id="projectFormTitle">Шинэ төсөл нэмэх</h3>
+      <input type="hidden" id="editProjectId"/>
+      <div class="form-group">
+        <label class="form-label">Төслийн нэр</label>
+        <input class="form-input" id="pTitle" placeholder="Жишээ: E-commerce сайт"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Тайлбар</label>
+        <textarea class="form-input form-textarea" id="pDesc" rows="3" placeholder="Төслийн товч тайлбар..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Emoji дүрс</label>
+          <input class="form-input" id="pEmoji" placeholder="🚀" maxlength="2"/>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Акцент өнгө</label>
+          <input class="form-input" id="pColor" type="color" value="#f5a623" style="height:44px;padding:.3rem;cursor:pointer"/>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Дараалал</label>
+          <input class="form-input" id="pOrder" type="number" placeholder="0" min="0"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Технологиуд (таслалаар)</label>
+        <input class="form-input" id="pTags" placeholder="HTML, CSS, JavaScript"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Боломжууд (мөр тус бүрд)</label>
+        <textarea class="form-input form-textarea" id="pFeatures" rows="3" placeholder="Хэрэглэгч бүртгэл&#10;Хайлт&#10;Мобайл дизайн"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label class="form-label">Demo холбоос</label>
+          <input class="form-input" id="pDemo" placeholder="https://"/>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">GitHub холбоос</label>
+          <input class="form-input" id="pCode" placeholder="https://github.com/"/>
+        </div>
+      </div>
+      <button class="btn-login" id="saveProjectBtn">Хадгалах →</button>
+      <p class="form-save-msg" id="saveMsg"></p>
+    </div>
+  </div>
+
+  <!-- Confirm delete -->
+  <div id="confirmModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:360px;text-align:center">
+      <div style="font-size:3rem;margin-bottom:1rem">🗑</div>
+      <h3 class="modal-title" style="font-size:1.3rem">Устгах уу?</h3>
+      <p style="color:var(--muted);font-size:.8rem;margin-bottom:1.5rem">Энэ үйлдлийг буцаах боломжгүй.</p>
+      <div style="display:flex;gap:1rem">
+        <button class="btn-login" id="confirmDelete" style="background:var(--accent2)">Тийм, устга</button>
+        <button class="btn-login" id="cancelDelete" style="background:var(--border);color:var(--text)">Болих</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Мөнхдөлгөөн — Портфолио</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">М.Д</div>
+    <div class="nav-links">
+      <a href="#about">Миний тухай</a>
+      <a href="#projects">Ажлууд</a>
+      <a href="#contact">Холбоо барих</a>
+      <a href="admin.html" class="nav-admin-btn">⚙ Админ</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="home">
+    <div class="hero-bg-grid"></div>
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="hero-badge">Ажлын саналд нээлттэй</div>
+    <h1>Мөнх<br/><em>дөлгөөн</em></h1>
+    <p class="hero-sub">
+      Цэвэр, зориулалттай дижитал туршлага бүтээдэг фронт-энд хөгжүүлэгч.
+      Монголд суурилсан — утга учиртай бүтээгдэхүүн хийдэг.
+    </p>
+    <div class="hero-cta">
+      <button class="btn btn-primary">Төслүүд үзэх</button>
+      <button class="btn btn-outline">Холбоо барих</button>
+    </div>
+    <div class="hero-scroll">
+      <div class="scroll-line"></div>
+      Доош гүйлгэх
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about">
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <div class="section-label">Миний тухай</div>
+        <h2 class="section-title">Вэбд зориулж<br/>бүтээдэг</h2>
+        <p>Би санааг дэгжин дижитал бүтээгдэхүүн болгон хувиргахыг хайрладаг хөгжүүлэгч. Хэрэглэгчийн интерфейсээс эхлээд бүрэн стекийн апп хүртэл цэвэр код бичиж, зөн совингоор мэдрэгдэх туршлага бүтээхэд анхаардаг.</p>
+        <p>Миний ажлууд хэрэглэгчийн апп болон вэб платформуудыг хамардаг — нарийн ширийнд анхаарч, жинхэнэ үнэ цэнийг бий болгодог.</p>
+
+        <div class="skills-section">
+          <div class="skills-label">Эзэмшсэн технологиуд</div>
+          <div class="skills-grid">
+            <div class="skill-item">
+              <div class="skill-icon">🌐</div>
+              <div class="skill-name">HTML</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="95%" style="width:0"></div></div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-icon">🎨</div>
+              <div class="skill-name">CSS</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="90%" style="width:0"></div></div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-icon">⚡</div>
+              <div class="skill-name">JavaScript</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="85%" style="width:0"></div></div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-icon">🐍</div>
+              <div class="skill-name">Python</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="75%" style="width:0"></div></div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-icon">🐘</div>
+              <div class="skill-name">PHP</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="70%" style="width:0"></div></div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-icon">⚙️</div>
+              <div class="skill-name">C++</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="65%" style="width:0"></div></div>
+            </div>
+            <div class="skill-item">
+              <div class="skill-icon">🔀</div>
+              <div class="skill-name">Git</div>
+              <div class="skill-bar"><div class="skill-fill" data-width="88%" style="width:0"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-stats reveal reveal-delay-2">
+        <div class="stat-card"><div class="stat-number">2+</div><div class="stat-label">Дууссан Төсөл</div></div>
+        <div class="stat-card"><div class="stat-number">∞</div><div class="stat-label">Кофены Аяга</div></div>
+        <div class="stat-card"><div class="stat-number">100%</div><div class="stat-label">Хүсэл Тэмүүлэл</div></div>
+        <div class="stat-card"><div class="stat-number">МН</div><div class="stat-label">Монголд Суурилсан</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects -->
+  <section id="projects">
+    <div class="section-label reveal">Сонгосон ажлууд</div>
+    <h2 class="section-title reveal">Дууссан<br/><span style="color:var(--accent)">Төслүүд</span></h2>
+    <div class="projects-grid" id="projectsGrid">
+      <div class="projects-loading">Ачааллаж байна...</div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact">
+    <div class="contact-inner reveal">
+      <div class="section-label">Холбоо барих</div>
+      <h2 class="section-title">Хамтдаа<br/>ажиллацгаая</h2>
+      <p>Шинэ боломж, чөлөөт ажил болон хамтын ажиллагаанд нээлттэй. Төсөл санаа байгаа эсвэл зүгээр л сайн мэндчилэх гэж байгаа — миний имэйл үргэлж нээлттэй байдаг.</p>
+      <a href="#" class="contact-email" id="contactEmailLink">munkhdulgoon@email.com ↗</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2026 Мөнхдөлгөөн. HTML, CSS & JS-ээр бүтээсэн.</p>
+    <div class="social-links">
+      <a href="#">GitHub</a>
+      <a href="#">LinkedIn</a>
+    </div>
+  </footer>
+
+  <!-- Contact Modal -->
+  <div id="contactModal" class="modal-overlay">
+    <div class="modal-box">
+      <button class="modal-close" id="closeContact">✕</button>
+      <div class="modal-label">Холбоо барих</div>
+      <h3 class="modal-title">Мессеж илгээх</h3>
+      <div id="formSuccess" class="form-success">
+        <div class="form-success-icon">✅</div>
+        <p class="form-success-title">Мессеж илгээгдлээ!</p>
+        <p class="form-success-sub">Удахгүй хариу өгөх болно.</p>
+      </div>
+      <div id="formFields">
+        <div class="form-group">
+          <label class="form-label">Таны нэр</label>
+          <input class="form-input" id="cName" type="text" placeholder="Нэр Овог"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Имэйл</label>
+          <input class="form-input" id="cEmail" type="email" placeholder="ta@email.com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Мессеж</label>
+          <textarea class="form-input form-textarea" id="cMsg" rows="4" placeholder="Төслийнхөө тухай хэлнэ үү..."></textarea>
+        </div>
+        <button class="form-submit" id="sendBtn">Илгээх →</button>
+        <p class="form-error" id="formError">Бүх талбарыг бөглөнө үү.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Modal -->
+  <div id="projectModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:560px">
+      <button class="modal-close" id="closeProject">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
