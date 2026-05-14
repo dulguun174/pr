@@ -9,53 +9,31 @@
 </head>
 <body>
 
-  <!-- ══ LOGIN SCREEN ══ -->
+  <!-- ══ НЭВТРЭХ ══ -->
   <div id="loginScreen">
     <div class="login-box">
       <div class="login-logo">М.Д <span>Админ</span></div>
+      <h2 class="login-title">Нэвтрэх</h2>
 
-      <!-- Step 1: Gmail -->
-      <div id="step1">
-        <h2 class="login-title">Нэвтрэх</h2>
-        <p class="login-sub">Зөвшөөрөгдсөн Gmail-аар нэвтэрнэ</p>
-        <div class="form-group">
-          <label class="form-label">Gmail хаяг</label>
-          <input type="email" id="gmailInput" class="form-input" placeholder="ta@gmail.com"/>
-        </div>
-        <button class="btn-login" id="sendCodeBtn">Код илгээх →</button>
-        <p class="login-error" id="gmailError"></p>
-        <a href="index.html" class="back-link">← Буцах</a>
+      <div class="form-group">
+        <label class="form-label">Gmail хаяг</label>
+        <input type="email" id="emailInput" class="form-input" placeholder="admin1@gmail.com"/>
       </div>
-
-      <!-- Step 2: Code -->
-      <div id="step2" style="display:none">
-        <h2 class="login-title">Код оруулах</h2>
-        <p class="login-sub" id="codeSentMsg">Gmail-д 6 оронтой код илгээлээ</p>
-        <div class="code-inputs" id="codeInputs">
-          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
-          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
-          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
-          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
-          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
-          <input class="code-box" maxlength="1" type="text" inputmode="numeric"/>
-        </div>
-        <button class="btn-login" id="verifyCodeBtn" style="margin-top:1.5rem">Баталгаажуулах →</button>
-        <p class="login-error" id="codeError"></p>
-        <div style="margin-top:1rem;display:flex;justify-content:space-between">
-          <button class="link-btn" id="resendBtn">Дахин илгээх</button>
-          <button class="link-btn" id="backToStep1">← Буцах</button>
+      <div class="form-group">
+        <label class="form-label">Нууц үг</label>
+        <div style="position:relative">
+          <input type="password" id="passInput" class="form-input" placeholder="••••••••" style="padding-right:3rem"/>
+          <button id="togglePass" style="position:absolute;right:.8rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1">👁</button>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div id="loginLoading" style="display:none;text-align:center;padding:2rem 0">
-        <div class="spinner"></div>
-        <p style="color:var(--muted);font-size:.78rem;margin-top:1rem">Шалгаж байна...</p>
-      </div>
+      <button class="btn-login" id="loginBtn">Нэвтрэх →</button>
+      <p class="login-error" id="loginError"></p>
+      <a href="index.html" class="back-link">← Буцах</a>
     </div>
   </div>
 
-  <!-- ══ ADMIN PANEL ══ -->
+  <!-- ══ АДМИН ХЭСЭГ ══ -->
   <div id="adminPanel" style="display:none">
 
     <aside class="sidebar">
@@ -85,7 +63,7 @@
         <div class="stats-row" id="statsRow"></div>
         <div class="charts-grid">
           <div class="chart-card">
-            <div class="chart-title">Сүүлийн 7 хоног (өдрөөр)</div>
+            <div class="chart-title">Сүүлийн 7 хоног</div>
             <div class="chart-wrap" id="dailyChart"></div>
           </div>
           <div class="chart-card">
@@ -99,7 +77,7 @@
       <section id="tab-visitors" class="tab">
         <div class="page-header">
           <h1 class="page-title">Үзэлтүүд</h1>
-          <p class="page-sub">Сайтад орсон бүх зочдын бүртгэл (Firebase)</p>
+          <p class="page-sub">Сайтад орсон бүх зочдын бүртгэл</p>
         </div>
         <div class="table-card">
           <div class="table-header">
@@ -109,6 +87,7 @@
           </div>
           <div id="visitorsList"><div class="empty-msg">Ачааллаж байна...</div></div>
         </div>
+        <button class="btn-danger" id="clearVisits" style="margin-top:1.2rem">🗑 Бүртгэл цэвэрлэх</button>
       </section>
 
       <!-- Devices -->
@@ -128,12 +107,10 @@
       <section id="tab-projects" class="tab">
         <div class="page-header">
           <h1 class="page-title">Төслүүд</h1>
-          <p class="page-sub">Нэмэх, засах, устгах — Firebase-д хадгалагдана</p>
+          <p class="page-sub">Нэмэх, засах, устгах</p>
         </div>
         <button class="btn-add" id="openAddProject">+ Шинэ төсөл нэмэх</button>
-        <div id="projectsList" style="margin-top:1.5rem">
-          <div class="empty-msg">Ачааллаж байна...</div>
-        </div>
+        <div id="projectsList" style="margin-top:1.5rem"></div>
       </section>
 
       <!-- Messages -->
@@ -142,13 +119,13 @@
           <h1 class="page-title">Мессежүүд</h1>
           <p class="page-sub">Холбоо барих хэсгээс ирсэн мессежүүд</p>
         </div>
-        <div id="messagesList"><div class="empty-msg">Ачааллаж байна...</div></div>
+        <div id="messagesList"></div>
       </section>
 
     </main>
   </div>
 
-  <!-- Add/Edit Project Modal -->
+  <!-- Project Form Modal -->
   <div id="projectFormModal" class="modal-overlay">
     <div class="modal-box">
       <button class="modal-close" id="closeProjectForm">✕</button>
@@ -164,11 +141,11 @@
       </div>
       <div class="form-row">
         <div class="form-group" style="flex:1">
-          <label class="form-label">Emoji дүрс</label>
+          <label class="form-label">Emoji</label>
           <input class="form-input" id="pEmoji" placeholder="🚀" maxlength="2"/>
         </div>
         <div class="form-group" style="flex:1">
-          <label class="form-label">Акцент өнгө</label>
+          <label class="form-label">Өнгө</label>
           <input class="form-input" id="pColor" type="color" value="#f5a623" style="height:44px;padding:.3rem;cursor:pointer"/>
         </div>
         <div class="form-group" style="flex:1">
@@ -194,6 +171,22 @@
           <input class="form-input" id="pCode" placeholder="https://github.com/"/>
         </div>
       </div>
+
+      <!-- Image upload -->
+      <div class="form-group">
+        <label class="form-label">Төслийн зурагнууд (хамгийн ихдээ 5)</label>
+        <div class="img-upload-area" id="imgUploadArea">
+          <div class="img-upload-placeholder" id="imgPlaceholder">
+            <div style="font-size:2rem;margin-bottom:.5rem">📷</div>
+            <div style="font-size:.72rem;color:var(--muted)">Зурагнуудаа энд чирж тавих эсвэл товчийг дарна уу</div>
+          </div>
+          <input type="file" id="imgFileInput" accept="image/*" multiple style="display:none"/>
+          <button type="button" class="btn-upload" onclick="document.getElementById('imgFileInput').click()">+ Зураг нэмэх</button>
+        </div>
+        <div class="img-preview-row" id="imgPreviewRow"></div>
+        <input type="hidden" id="pImages" value="[]"/>
+      </div>
+
       <button class="btn-login" id="saveProjectBtn">Хадгалах →</button>
       <p class="form-save-msg" id="saveMsg"></p>
     </div>

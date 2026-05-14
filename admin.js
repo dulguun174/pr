@@ -1,593 +1,537 @@
-// ════════════════════════════════════════════════════════
-//  ADMIN.JS — Gmail Email Link Auth + Firestore
-//  Firebase config тохируулаагүй үед localStorage ашиглана
-// ════════════════════════════════════════════════════════
+var ADMIN_EMAIL    = 'admin1@gmail.com';
+var ADMIN_PASSWORD = 'admin123';
 
-// ── 🔥 FIREBASE CONFIG (өөрийнхөөрөө солино уу) ─────────
-const FB_CONFIG = {
-  apiKey:            "",   // ← YOUR_API_KEY
-  authDomain:        "",
-  projectId:         "",
-  storageBucket:     "",
-  messagingSenderId: "",
-  appId:             ""
+
+var FB_CONFIG = {
+  apiKey:            "AIzaSyDEGwL4j5ZFyNi1mPA-lNnnAJLqd_hprzU",
+  authDomain:        "portfolio-fc0ab.firebaseapp.com",
+  projectId:         "portfolio-fc0ab",
+  storageBucket:     "portfolio-fc0ab.firebasestorage.app",
+  messagingSenderId: "1049535893207",
+  appId:             "1:1049535893207:web:2a5338ee932341ed9d6a92",
+  measurementId:     "G-ETH2P8QHYZ"
 };
+var _db = null;
 
-// ── ✉️  ЗӨВШӨӨРӨГДСӨН GMAIL ──────────────────────────────
-const ALLOWED_EMAIL = "munkhdulgoon@gmail.com";   // ← ЭНД
-
-// ── Firebase ready flag ───────────────────────────────────
-const FB_READY = FB_CONFIG.apiKey.length > 0;
-let auth = null, db = null;
-
-// ════════════════════════════════════════════════════════
-//  DEFAULT PROJECTS
-// ════════════════════════════════════════════════════════
-const DEFAULT_PROJECTS = [
-  {
-    id: 'food', title: 'Food Delivery App',
-    desc: 'Хоол захиалгын платформ. Бодит цагийн захиалга хянах, рестораны жагсаалт, сагс болон төлбөр хийх боломжтой.',
-    tags: ['HTML','CSS','JavaScript','API'], emoji: '🍔', visualType: 'food',
-    color: '#f5a623', features: ['Ресторан хайх','Бодит цагийн хянах','Сагс & төлбөр','Захиалгын түүх'],
-    demo: '#', code: '#', order: 0
-  },
-  {
-    id: 'movie', title: 'Movie Website',
-    desc: 'TMDB API ашигласан кино үзэх платформ. Жанрын шүүлт, хайлт, үнэлгээ болон watchlist боломжтой.',
-    tags: ['HTML','CSS','JavaScript','TMDB API'], emoji: '🎬', visualType: 'movie',
-    color: '#e05a5a', features: ['TMDB API холболт','Жанрын шүүлт','Кино дэлгэрэнгүй','Watchlist'],
-    demo: '#', code: '#', order: 1
+async function initFirebase() {
+  try {
+    var m1 = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    var m2 = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    var app = m1.initializeApp(FB_CONFIG);
+    _db = m2.getFirestore(app);
+    console.log("Firebase connected ✅");
+    return m2;
+  } catch(e) {
+    console.warn("Firebase failed, using localStorage:", e.message);
+    return null;
   }
+}
+
+async function fm() {
+  return await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+}
+
+// ── Default projects ─────────────────────────────────────
+var DEFAULT_PROJECTS = [
+  { id:'food', title:'Food Delivery App', desc:'Хоол захиалгын платформ. Бодит цагийн захиалга хянах, рестораны жагсаалт, сагс болон төлбөр хийх боломжтой.', tags:['HTML','CSS','JavaScript','API'], emoji:'🍔', visualType:'food', color:'#f5a623', features:['Ресторан хайх & шүүх','Бодит цагийн хянах','Сагс & төлбөр','Захиалгын түүх'], demo:'#', code:'#', order:0 },
+  { id:'movie', title:'Movie Website', desc:'TMDB API ашигласан кино үзэх платформ. Жанрын шүүлт, хайлт, үнэлгээ болон watchlist боломжтой.', tags:['HTML','CSS','JavaScript','TMDB API'], emoji:'🎬', visualType:'movie', color:'#e05a5a', features:['TMDB API холболт','Жанрын шүүлт & хайлт','Кино дэлгэрэнгүй','Watchlist'], demo:'#', code:'#', order:1 }
 ];
 
-// ════════════════════════════════════════════════════════
-//  HELPERS
-// ════════════════════════════════════════════════════════
-function getLocalVisits()   { return JSON.parse(localStorage.getItem('portfolio_visits')   || '[]'); }
-function getLocalMessages() { return JSON.parse(localStorage.getItem('portfolio_messages') || '[]'); }
-function getLocalProjects() {
-  const s = localStorage.getItem('portfolio_projects');
-  return s ? JSON.parse(s) : [...DEFAULT_PROJECTS];
+function getVisits()   { return JSON.parse(localStorage.getItem('portfolio_visits')   || '[]'); }
+function getMessages() { return JSON.parse(localStorage.getItem('portfolio_messages') || '[]'); }
+function getProjects() { var s=localStorage.getItem('portfolio_projects'); return s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_PROJECTS)); }
+function saveProjects(arr) { localStorage.setItem('portfolio_projects',JSON.stringify(arr)); }
+
+// Firestore helpers
+async function fsGetVisits() {
+  if (!_db) return getVisits();
+  try {
+    var f = await fm();
+    var snap = await f.getDocs(f.query(f.collection(_db,'visits'), f.orderBy('time','desc'), f.limit(500)));
+    var list = []; snap.forEach(function(d){ list.push(d.data()); });
+    return list.length ? list : getVisits();
+  } catch(e) { return getVisits(); }
 }
-function saveLocalProjects(arr) { localStorage.setItem('portfolio_projects', JSON.stringify(arr)); }
+async function fsGetMessages() {
+  if (!_db) return getMessages();
+  try {
+    var f = await fm();
+    var snap = await f.getDocs(f.query(f.collection(_db,'messages'), f.orderBy('time','desc')));
+    var list = []; snap.forEach(function(d){ list.push(d.data()); });
+    return list.length ? list : getMessages();
+  } catch(e) { return getMessages(); }
+}
+async function fsGetProjects() {
+  // Эхлээд localStorage-аас авна (үргэлж ажиллана)
+  var local = getProjects();
+  if (!_db) return local;
+  try {
+    var f = await fm();
+    // orderBy ашиглахгүй — index шаардахгүй
+    var snap = await f.getDocs(f.collection(_db,'projects'));
+    if (!snap.empty) {
+      var list = [];
+      snap.forEach(function(d){ list.push(Object.assign({id:d.id},d.data())); });
+      // order талбараар эрэмбэлнэ
+      list.sort(function(a,b){ return (a.order||0)-(b.order||0); });
+      // localStorage-д хадгална (sync)
+      saveProjects(list);
+      return list;
+    }
+    return local;
+  } catch(e) {
+    console.warn("Firestore projects fetch failed:", e.message);
+    return local;
+  }
+}
+async function fsSaveProject(editId, data) {
+  // Always save to localStorage
+  var projects = getProjects();
+  if (editId) {
+    var idx = projects.findIndex(function(p){return p.id===editId;});
+    if (idx!==-1) projects[idx] = Object.assign({},projects[idx],data);
+  } else {
+    data.id = 'proj_'+Date.now();
+    projects.push(data);
+  }
+  saveProjects(projects);
+  // Also save to Firestore
+  if (_db) {
+    try {
+      var f = await fm();
+      if (editId) {
+        await f.updateDoc(f.doc(_db,'projects',editId), Object.assign({},data,{updatedAt:f.serverTimestamp()}));
+      } else {
+        await f.addDoc(f.collection(_db,'projects'), Object.assign({},data,{createdAt:f.serverTimestamp()}));
+      }
+    } catch(e) { console.warn("Firestore save failed:", e.message); }
+  }
+  return data.id || editId;
+}
+async function fsDeleteProject(id) {
+  var projects = getProjects().filter(function(p){return p.id!==id;});
+  saveProjects(projects);
+  if (_db) {
+    try {
+      var f = await fm();
+      await f.deleteDoc(f.doc(_db,'projects',id));
+    } catch(e) { console.warn("Firestore delete failed:", e.message); }
+  }
+}
 
 function fmtDate(val) {
   if (!val) return '—';
-  const d = (typeof val === 'string') ? new Date(val) : (val.toDate ? val.toDate() : new Date(val));
-  const p = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  var d = (val && val.toDate) ? val.toDate() : new Date(val);
+  if (isNaN(d.getTime())) return '—';
+  var p = function(n){ return String(n).padStart(2,'0'); };
+  return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
 }
 function fmtDay(d) {
-  const p = n => String(n).padStart(2,'0');
-  return `${p(d.getMonth()+1)}/${p(d.getDate())}`;
+  var p=function(n){return String(n).padStart(2,'0');};
+  return p(d.getMonth()+1)+'/'+p(d.getDate());
 }
 
-// ════════════════════════════════════════════════════════
-//  DOM REFS
-// ════════════════════════════════════════════════════════
-const loginScreen  = document.getElementById('loginScreen');
-const adminPanel   = document.getElementById('adminPanel');
-const step1        = document.getElementById('step1');
-const step2        = document.getElementById('step2');
-const loginLoading = document.getElementById('loginLoading');
-const gmailInput   = document.getElementById('gmailInput');
-const gmailError   = document.getElementById('gmailError');
-const codeError    = document.getElementById('codeError');
-const codeSentMsg  = document.getElementById('codeSentMsg');
-const codeBoxes    = document.querySelectorAll('.code-box');
+// ════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════
+var loginScreen = document.getElementById('loginScreen');
+var adminPanel  = document.getElementById('adminPanel');
+var loginError  = document.getElementById('loginError');
+var emailInp    = document.getElementById('emailInput');
+var passInp     = document.getElementById('passInput');
 
-// ════════════════════════════════════════════════════════
-//  INIT — Firebase or localStorage mode
-// ════════════════════════════════════════════════════════
-async function initApp() {
-  if (FB_READY) {
-    try {
-      const { initializeApp }  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-      const { getAuth, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged }
-        = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-      const { getFirestore }   = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-
-      const fbApp = initializeApp(FB_CONFIG);
-      auth = getAuth(fbApp);
-      db   = getFirestore(fbApp);
-
-      // Returning from email link?
-      if (isSignInWithEmailLink(auth, window.location.href)) {
-        setLoading(true);
-        let email = localStorage.getItem('adminEmailForSignIn') || ALLOWED_EMAIL;
-        try {
-          const result = await signInWithEmailLink(auth, email, window.location.href);
-          localStorage.removeItem('adminEmailForSignIn');
-          window.history.replaceState(null,'',window.location.pathname);
-          if (result.user.email === ALLOWED_EMAIL) {
-            showAdminPanel(result.user.email);
-          } else {
-            const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-            await signOut(auth);
-            setLoading(false);
-            gmailError.textContent = 'Зөвшөөрөгдөөгүй Gmail хаяг.';
-          }
-        } catch(e) {
-          setLoading(false);
-          gmailError.textContent = 'Холбоос хүчингүй болсон. Дахин оролдоно уу.';
-        }
-        return;
-      }
-
-      onAuthStateChanged(auth, user => {
-        if (user && user.email === ALLOWED_EMAIL) showAdminPanel(user.email);
-      });
-
-    } catch(e) {
-      console.warn('Firebase failed, using localStorage mode:', e.message);
-      checkLocalAuth();
-    }
-  } else {
-    // localStorage mode
-    checkLocalAuth();
-  }
+if (sessionStorage.getItem('admin_auth') === '1') {
+  showAdmin();
 }
 
-function checkLocalAuth() {
-  if (sessionStorage.getItem('admin_local_auth') === '1') {
-    showAdminPanel(ALLOWED_EMAIL);
-  }
-}
-
-// ════════════════════════════════════════════════════════
-//  STEP 1 — Gmail input
-// ════════════════════════════════════════════════════════
-document.getElementById('sendCodeBtn').addEventListener('click', sendLink);
-gmailInput.addEventListener('keydown', e => { if(e.key==='Enter') sendLink(); });
-
-async function sendLink() {
-  const email = gmailInput.value.trim().toLowerCase();
-  gmailError.textContent = '';
-
-  if (!email)                         { gmailError.textContent = 'Gmail хаягаа оруулна уу.'; return; }
-  if (!email.endsWith('@gmail.com'))  { gmailError.textContent = 'Зөвхөн Gmail хаяг зөвшөөрөгддөг.'; return; }
-  if (email !== ALLOWED_EMAIL)        { gmailError.textContent = 'Энэ Gmail хаяг зөвшөөрөгдөөгүй.'; return; }
-
-  if (!FB_READY || !auth) {
-    // localStorage mode: simple password-free local login
-    sessionStorage.setItem('admin_local_auth','1');
-    showAdminPanel(email);
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const { sendSignInLinkToEmail } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    await sendSignInLinkToEmail(auth, email, {
-      url: window.location.href,
-      handleCodeInApp: true
-    });
-    localStorage.setItem('adminEmailForSignIn', email);
-    setLoading(false);
-    showStep2(email);
-  } catch(e) {
-    setLoading(false);
-    if (e.code === 'auth/operation-not-allowed') {
-      gmailError.textContent = 'Firebase Authentication → Email Link идэвхжүүлнэ үү.';
-    } else {
-      gmailError.textContent = 'Алдаа: ' + e.message;
-    }
-  }
-}
-
-function showStep2(email) {
-  step1.style.display = 'none';
-  step2.style.display = 'block';
-  codeSentMsg.textContent = `"${email}" хаягт нэвтрэх холбоос илгээлээ. Имэйлийн холбоосыг дарна уу.`;
-  codeBoxes[0]?.focus();
-}
-
-function setLoading(on) {
-  step1.style.display        = on ? 'none' : 'block';
-  step2.style.display        = 'none';
-  loginLoading.style.display = on ? 'block' : 'none';
-}
-
-// Code boxes keyboard nav (visual only)
-codeBoxes.forEach((box, i) => {
-  box.addEventListener('input', () => {
-    box.value = box.value.replace(/\D/g,'');
-    if (box.value && i < codeBoxes.length-1) codeBoxes[i+1].focus();
-  });
-  box.addEventListener('keydown', e => {
-    if (e.key==='Backspace' && !box.value && i>0) codeBoxes[i-1].focus();
-  });
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+[emailInp, passInp].forEach(function(el){
+  if(el) el.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
 });
 
-document.getElementById('verifyCodeBtn').addEventListener('click', () => {
-  codeError.textContent = 'Gmail-д ирсэн холбоосыг дарж нэвтэрнэ үү.';
-});
-document.getElementById('backToStep1').addEventListener('click', () => {
-  step2.style.display='none'; step1.style.display='block'; codeError.textContent='';
-});
-document.getElementById('resendBtn').addEventListener('click', () => {
-  step2.style.display='none'; step1.style.display='block'; sendLink();
-});
+function doLogin() {
+  var email = (emailInp.value||'').trim().toLowerCase();
+  var pass  = (passInp.value||'').trim();
+  loginError.textContent = '';
+  if (!email || !pass) { loginError.textContent = 'Имэйл болон нууц үгээ оруулна уу.'; return; }
+  if (email !== ADMIN_EMAIL)    { loginError.textContent = 'Gmail хаяг буруу байна.'; return; }
+  if (pass  !== ADMIN_PASSWORD) { loginError.textContent = 'Нууц үг буруу байна.'; return; }
+  sessionStorage.setItem('admin_auth','1');
+  showAdmin();
+}
 
-// ════════════════════════════════════════════════════════
-//  SHOW ADMIN PANEL
-// ════════════════════════════════════════════════════════
-function showAdminPanel(email) {
+function showAdmin() {
   loginScreen.style.display = 'none';
   adminPanel.style.display  = 'flex';
-  const badge = document.getElementById('adminEmailBadge');
-  if (badge) badge.textContent = email;
-  const h = new Date().getHours();
-  const greet = h<12 ? 'Өглөөний мэнд' : h<18 ? 'Үдийн мэнд' : 'Оройн мэнд';
-  const dg = document.getElementById('dashGreet');
-  if (dg) dg.textContent = `${greet}, ${email}`;
-
-  loadDashboard();
-  loadVisitors();
-  loadDevices();
-  loadProjects();
-  loadMessages();
+  var badge = document.getElementById('adminEmailBadge');
+  if(badge) badge.textContent = ADMIN_EMAIL;
+  var h = new Date().getHours();
+  var greet = h<12?'Өглөөний мэнд':h<18?'Үдийн мэнд':'Оройн мэнд';
+  var dg = document.getElementById('dashGreet');
+  if(dg) dg.textContent = greet+', '+ADMIN_EMAIL;
+  // Init Firebase then load all data
+  initFirebase().then(function(){
+    loadDashboard();
+    loadVisitors();
+    loadDevices();
+    loadProjects();
+    loadMessages();
+  });
 }
 
-// ── Logout ────────────────────────────────────────────────
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  sessionStorage.removeItem('admin_local_auth');
-  if (auth) {
-    try {
-      const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-      await signOut(auth);
-    } catch(e) {}
-  }
+document.getElementById('logoutBtn').addEventListener('click', function(){
+  sessionStorage.removeItem('admin_auth');
   location.reload();
 });
 
-// ════════════════════════════════════════════════════════
-//  TAB NAVIGATION
-// ════════════════════════════════════════════════════════
-document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
-  item.addEventListener('click', e => {
+// ════════════════════════════════════════════════════
+//  TAB NAV
+// ════════════════════════════════════════════════════
+document.querySelectorAll('.nav-item[data-tab]').forEach(function(item){
+  item.addEventListener('click',function(e){
     e.preventDefault();
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
     item.classList.add('active');
     document.getElementById('tab-'+item.dataset.tab).classList.add('active');
   });
 });
 
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 //  DASHBOARD
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 async function loadDashboard() {
-  let visits=[], projCount=0, msgCount=0;
+  var visits   = await fsGetVisits();
+  var projects = await fsGetProjects();
+  var messages = await fsGetMessages();
+  var today    = new Date().toDateString();
+  var todayCt  = visits.filter(function(v){ return new Date(v.time?.toDate?.()||v.time).toDateString()===today; }).length;
+  var desktop  = visits.filter(function(v){ return v.device==='Desktop'; }).length;
+  var mobile   = visits.filter(function(v){ return v.device==='Mobile'; }).length;
 
-  if (db) {
-    try {
-      const { collection, getDocs, orderBy, query, limit } =
-        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const [vs, ps, ms] = await Promise.all([
-        getDocs(query(collection(db,'visits'), orderBy('time','desc'), limit(500))),
-        getDocs(collection(db,'projects')),
-        getDocs(collection(db,'messages'))
-      ]);
-      vs.forEach(d=>visits.push(d.data()));
-      projCount=ps.size; msgCount=ms.size;
-    } catch(e) { console.warn(e); }
-  }
-
-  if (!visits.length) {
-    visits    = getLocalVisits();
-    projCount = getLocalProjects().length;
-    msgCount  = getLocalMessages().length;
-  }
-
-  const today   = new Date().toDateString();
-  const todayCt = visits.filter(v => new Date(v.time?.toDate?.()||v.time).toDateString()===today).length;
-  const desktop = visits.filter(v=>v.device==='Desktop').length;
-  const mobile  = visits.filter(v=>v.device==='Mobile').length;
-
-  document.getElementById('statsRow').innerHTML = `
-    <div class="stat-card"><div class="stat-icon">👁</div><div class="stat-value">${visits.length}</div><div class="stat-label">Нийт үзэлт</div></div>
-    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">${todayCt}</div><div class="stat-label">Өнөөдөр</div></div>
-    <div class="stat-card"><div class="stat-icon">🖥</div><div class="stat-value">${desktop}</div><div class="stat-label">Desktop</div></div>
-    <div class="stat-card"><div class="stat-icon">📱</div><div class="stat-value">${mobile}</div><div class="stat-label">Mobile</div></div>
-    <div class="stat-card"><div class="stat-icon">🗂</div><div class="stat-value">${projCount}</div><div class="stat-label">Төслүүд</div></div>
-    <div class="stat-card"><div class="stat-icon">✉️</div><div class="stat-value">${msgCount}</div><div class="stat-label">Мессежүүд</div></div>`;
+  document.getElementById('statsRow').innerHTML =
+    mkStat('👁', visits.length,   'Нийт үзэлт')+
+    mkStat('📅', todayCt,         'Өнөөдөр')+
+    mkStat('🖥', desktop,         'Desktop')+
+    mkStat('📱', mobile,          'Mobile')+
+    mkStat('🗂', projects.length, 'Төслүүд')+
+    mkStat('✉️', messages.length, 'Мессежүүд');
 
   renderDailyChart(visits);
   renderHourlyChart(visits);
 }
 
-function toDate(v) { return v?.toDate ? v.toDate() : new Date(v); }
+function mkStat(icon,val,label){
+  return '<div class="stat-card"><div class="stat-icon">'+icon+'</div><div class="stat-value">'+val+'</div><div class="stat-label">'+label+'</div></div>';
+}
+
+function toDate(v) {
+  if (!v) return new Date(0);
+  return v.toDate ? v.toDate() : new Date(v);
+}
 
 function renderDailyChart(visits) {
-  const days=[];
-  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push({label:fmtDay(d),key:d.toDateString(),count:0}); }
-  visits.forEach(v=>{ const key=toDate(v.time).toDateString(); const d=days.find(x=>x.key===key); if(d)d.count++; });
-  const max=Math.max(...days.map(d=>d.count),1);
-  document.getElementById('dailyChart').innerHTML=days.map(d=>`
-    <div class="bar-col" title="${d.label}: ${d.count}">
-      <div class="bar-val">${d.count||''}</div>
-      <div class="bar-fill" style="height:${Math.round(d.count/max*100)}px"></div>
-      <div class="bar-label">${d.label}</div>
-    </div>`).join('');
-}
-
-function renderHourlyChart(visits) {
-  const today=new Date().toDateString();
-  const hours=Array.from({length:24},(_,i)=>({h:i,count:0}));
-  visits.filter(v=>toDate(v.time).toDateString()===today).forEach(v=>hours[toDate(v.time).getHours()].count++);
-  const now=new Date().getHours();
-  const rel=hours.filter(h=>h.count>0||Math.abs(h.h-now)<=1);
-  if(!rel.length){document.getElementById('hourlyChart').innerHTML='<div class="empty-msg" style="padding:1rem;font-size:.75rem">Өнөөдөр үзэлт байхгүй</div>';return;}
-  const max=Math.max(...rel.map(h=>h.count),1);
-  document.getElementById('hourlyChart').innerHTML=rel.map(h=>`
-    <div class="bar-col" title="${h.h}:00 — ${h.count}">
-      <div class="bar-val">${h.count||''}</div>
-      <div class="bar-fill blue" style="height:${Math.round(h.count/max*100)}px"></div>
-      <div class="bar-label">${h.h}:00</div>
-    </div>`).join('');
-}
-
-// ════════════════════════════════════════════════════════
-//  VISITORS
-// ════════════════════════════════════════════════════════
-async function loadVisitors() {
-  const list=document.getElementById('visitorsList');
-  let visits=[];
-
-  if (db) {
-    try {
-      const {collection,getDocs,orderBy,query,limit}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const snap=await getDocs(query(collection(db,'visits'),orderBy('time','desc'),limit(200)));
-      snap.forEach(d=>visits.push(d.data()));
-    } catch(e){}
-  }
-  if(!visits.length) visits=[...getLocalVisits()].reverse();
-
-  if(!visits.length){list.innerHTML='<div class="empty-msg">Одоогоор үзэлт бүртгэгдээгүй байна.</div>';return;}
-  list.innerHTML=visits.map(v=>{
-    const badge=v.device==='Mobile'?'badge-mobile':v.device==='Tablet'?'badge-tablet':'badge-desktop';
-    const icon=v.device==='Mobile'?'📱':v.device==='Tablet'?'📟':'🖥';
-    return `<div class="table-row">
-      <span class="time-cell">${fmtDate(v.time)}</span>
-      <span><span class="device-badge ${badge}">${icon} ${v.device||'—'}</span></span>
-      <span style="color:var(--muted);font-size:.66rem">${v.browser||'—'}</span>
-    </div>`;
+  var days=[];
+  for(var i=6;i>=0;i--){ var d=new Date(); d.setDate(d.getDate()-i); days.push({label:fmtDay(d),key:d.toDateString(),count:0}); }
+  visits.forEach(function(v){
+    var key=toDate(v.time).toDateString();
+    for(var i=0;i<days.length;i++){if(days[i].key===key){days[i].count++;break;}}
+  });
+  var max=0; days.forEach(function(d){if(d.count>max)max=d.count;}); if(!max)max=1;
+  document.getElementById('dailyChart').innerHTML=days.map(function(d){
+    return '<div class="bar-col" title="'+d.label+': '+d.count+'">'+
+      '<div class="bar-val">'+(d.count||'')+'</div>'+
+      '<div class="bar-fill" style="height:'+Math.round(d.count/max*100)+'px"></div>'+
+      '<div class="bar-label">'+d.label+'</div></div>';
   }).join('');
 }
 
-// ════════════════════════════════════════════════════════
-//  DEVICES
-// ════════════════════════════════════════════════════════
-async function loadDevices() {
-  let visits=[];
-  if(db){
-    try{
-      const {collection,getDocs,limit,query}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const snap=await getDocs(query(collection(db,'visits'),limit(500)));
-      snap.forEach(d=>visits.push(d.data()));
-    }catch(e){}
-  }
-  if(!visits.length) visits=getLocalVisits();
-
-  const total=visits.length||1;
-  const counts={Desktop:0,Mobile:0,Tablet:0};
-  visits.forEach(v=>{if(counts[v.device]!==undefined)counts[v.device]++;});
-
-  document.getElementById('deviceGrid').innerHTML=[
-    {key:'Desktop',emoji:'🖥',label:'Desktop'},
-    {key:'Mobile',emoji:'📱',label:'Mobile'},
-    {key:'Tablet',emoji:'📟',label:'Tablet'}
-  ].map(d=>`<div class="device-card">
-    <div class="device-emoji">${d.emoji}</div>
-    <div class="device-count">${counts[d.key]}</div>
-    <div class="device-name">${d.label}</div>
-    <div class="device-pct">${Math.round(counts[d.key]/total*100)}%</div>
-  </div>`).join('');
-
-  const colors={Desktop:'var(--accent3)',Mobile:'var(--accent)',Tablet:'#50c878'};
-  document.getElementById('deviceBars').innerHTML=Object.entries(counts).map(([k,c])=>`
-    <div class="device-bar-row">
-      <div class="device-bar-label">${k}</div>
-      <div class="device-bar-track"><div class="device-bar-fill" style="width:${Math.round(c/total*100)}%;background:${colors[k]}"></div></div>
-      <div class="device-bar-num">${c}</div>
-    </div>`).join('');
+function renderHourlyChart(visits) {
+  var today=new Date().toDateString();
+  var hours=[]; for(var i=0;i<24;i++) hours.push({h:i,count:0});
+  visits.forEach(function(v){
+    if(toDate(v.time).toDateString()===today) hours[toDate(v.time).getHours()].count++;
+  });
+  var now=new Date().getHours();
+  var rel=hours.filter(function(h){return h.count>0||Math.abs(h.h-now)<=1;});
+  if(!rel.length){document.getElementById('hourlyChart').innerHTML='<div class="empty-msg" style="font-size:.75rem">Өнөөдөр үзэлт байхгүй</div>';return;}
+  var max=0; rel.forEach(function(h){if(h.count>max)max=h.count;}); if(!max)max=1;
+  document.getElementById('hourlyChart').innerHTML=rel.map(function(h){
+    return '<div class="bar-col" title="'+h.h+':00 — '+h.count+'">'+
+      '<div class="bar-val">'+(h.count||'')+'</div>'+
+      '<div class="bar-fill blue" style="height:'+Math.round(h.count/max*100)+'px"></div>'+
+      '<div class="bar-label">'+h.h+':00</div></div>';
+  }).join('');
 }
 
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+//  VISITORS
+// ════════════════════════════════════════════════════
+async function loadVisitors() {
+  var visits = await fsGetVisits();
+  visits = visits.slice().reverse();
+  var list = document.getElementById('visitorsList');
+  if(!visits.length){list.innerHTML='<div class="empty-msg">Одоогоор үзэлт бүртгэгдээгүй байна.</div>';return;}
+  list.innerHTML = visits.map(function(v){
+    var badge=v.device==='Mobile'?'badge-mobile':v.device==='Tablet'?'badge-tablet':'badge-desktop';
+    var icon =v.device==='Mobile'?'📱':v.device==='Tablet'?'📟':'🖥';
+    return '<div class="table-row">'+
+      '<span class="time-cell">'+fmtDate(v.time)+'</span>'+
+      '<span><span class="device-badge '+badge+'">'+icon+' '+(v.device||'Desktop')+'</span></span>'+
+      '<span style="color:var(--muted);font-size:.66rem">'+(v.browser||'—')+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+document.getElementById('clearVisits').addEventListener('click',function(){
+  if(!confirm('Бүх үзэлтийн бүртгэлийг устгах уу?')) return;
+  localStorage.removeItem('portfolio_visits');
+  loadVisitors(); loadDashboard(); loadDevices();
+});
+
+// ════════════════════════════════════════════════════
+//  DEVICES
+// ════════════════════════════════════════════════════
+async function loadDevices() {
+  var visits = await fsGetVisits();
+  var total  = visits.length || 1;
+  var counts = {Desktop:0,Mobile:0,Tablet:0};
+  visits.forEach(function(v){ if(counts[v.device]!==undefined) counts[v.device]++; });
+
+  document.getElementById('deviceGrid').innerHTML = [
+    {key:'Desktop',emoji:'🖥',label:'Desktop'},
+    {key:'Mobile', emoji:'📱',label:'Mobile'},
+    {key:'Tablet', emoji:'📟',label:'Tablet'}
+  ].map(function(d){
+    return '<div class="device-card">'+
+      '<div class="device-emoji">'+d.emoji+'</div>'+
+      '<div class="device-count">'+counts[d.key]+'</div>'+
+      '<div class="device-name">'+d.label+'</div>'+
+      '<div class="device-pct">'+Math.round(counts[d.key]/total*100)+'%</div>'+
+    '</div>';
+  }).join('');
+
+  var colors={Desktop:'var(--accent3)',Mobile:'var(--accent)',Tablet:'#50c878'};
+  document.getElementById('deviceBars').innerHTML = Object.keys(counts).map(function(k){
+    var c=counts[k];
+    return '<div class="device-bar-row">'+
+      '<div class="device-bar-label">'+k+'</div>'+
+      '<div class="device-bar-track"><div class="device-bar-fill" style="width:'+Math.round(c/total*100)+'%;background:'+colors[k]+'"></div></div>'+
+      '<div class="device-bar-num">'+c+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
 //  PROJECTS
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 async function loadProjects() {
-  let projects=[];
-  if(db){
-    try{
-      const {collection,getDocs,orderBy,query}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const snap=await getDocs(query(collection(db,'projects'),orderBy('order','asc')));
-      if(!snap.empty){snap.forEach(d=>projects.push({id:d.id,...d.data()}));}
-    }catch(e){
-      try{
-        const {collection,getDocs}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-        const snap=await getDocs(collection(db,'projects'));
-        snap.forEach(d=>projects.push({id:d.id,...d.data()}));
-      }catch(e2){}
-    }
+  var list = document.getElementById('projectsList');
+  list.innerHTML = '<div class="empty-msg" style="font-size:.75rem">Ачааллаж байна...</div>';
+  try {
+    var projects = await fsGetProjects();
+    renderProjectList(projects);
+  } catch(e) {
+    // localStorage fallback
+    renderProjectList(getProjects());
   }
-  if(!projects.length) projects=getLocalProjects();
-  renderProjectList(projects);
 }
 
 function renderProjectList(projects) {
-  const list=document.getElementById('projectsList');
-  if(!projects.length){list.innerHTML='<div class="empty-msg">Төсөл байхгүй. Дээрх товч дарж нэмнэ үү.</div>';return;}
-  list.innerHTML=projects.map(p=>`
-    <div class="proj-admin-card">
-      <div class="proj-admin-emoji">${p.emoji||'🚀'}</div>
-      <div class="proj-admin-info">
-        <div class="proj-admin-title">${p.title}</div>
-        <div class="proj-admin-desc">${(p.desc||'').substring(0,90)}${(p.desc||'').length>90?'…':''}</div>
-        <div class="proj-admin-tags">${(p.tags||[]).map(t=>`<span class="proj-admin-tag">${t}</span>`).join('')}</div>
-      </div>
-      <div class="proj-admin-actions">
-        <button class="btn-edit" onclick="openEditProject('${p.id}')">✏ Засах</button>
-        <button class="btn-del"  onclick="startDelete('${p.id}')">🗑</button>
-      </div>
-    </div>`).join('');
+  var list = document.getElementById('projectsList');
+  if (!projects || !projects.length) {
+    list.innerHTML = '<div class="empty-msg">Төсөл байхгүй. Дээрх товч дарж нэмнэ үү.</div>';
+    return;
+  }
+  list.innerHTML = projects.map(function(p){
+    return '<div class="proj-admin-card">'+
+      '<div class="proj-admin-emoji">'+(p.emoji||'🚀')+'</div>'+
+      '<div class="proj-admin-info">'+
+        '<div class="proj-admin-title">'+p.title+'</div>'+
+        '<div class="proj-admin-desc">'+(p.desc||'').substring(0,90)+((p.desc||'').length>90?'…':'')+'</div>'+
+        '<div class="proj-admin-tags">'+(p.tags||[]).map(function(t){return '<span class="proj-admin-tag">'+t+'</span>';}).join('')+'</div>'+
+      '</div>'+
+      '<div class="proj-admin-actions">'+
+        '<button class="btn-edit" onclick="openEditProject(\''+p.id+'\')">✏ Засах</button>'+
+        '<button class="btn-del"  onclick="startDelete(\''+p.id+'\')">🗑</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
 }
 
 // Open add
-document.getElementById('openAddProject').addEventListener('click',()=>{
+document.getElementById('openAddProject').addEventListener('click',function(){
   document.getElementById('projectFormTitle').textContent='Шинэ төсөл нэмэх';
   document.getElementById('editProjectId').value='';
-  ['pTitle','pDesc','pTags','pFeatures','pDemo','pCode'].forEach(id=>document.getElementById(id).value='');
+  ['pTitle','pDesc','pTags','pFeatures','pDemo','pCode'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('pEmoji').value='🚀';
   document.getElementById('pColor').value='#f5a623';
   document.getElementById('pOrder').value='0';
   document.getElementById('saveMsg').textContent='';
+  resetImageUpload();
   document.getElementById('projectFormModal').style.display='flex';
 });
 
 // Open edit
 window.openEditProject = async function(id) {
-  let p=null;
-  if(db){
-    try{
-      const {collection,getDocs}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const snap=await getDocs(collection(db,'projects'));
-      snap.forEach(d=>{if(d.id===id)p={id:d.id,...d.data()};});
-    }catch(e){}
-  }
-  if(!p) p=getLocalProjects().find(x=>x.id===id);
-  if(!p)return;
+  var projects = await fsGetProjects();
+  var p=null; for(var i=0;i<projects.length;i++){if(projects[i].id===id){p=projects[i];break;}}
+  if(!p) return;
   document.getElementById('projectFormTitle').textContent='Төсөл засах';
   document.getElementById('editProjectId').value=id;
   document.getElementById('pTitle').value   =p.title||'';
   document.getElementById('pDesc').value    =p.desc||'';
   document.getElementById('pEmoji').value   =p.emoji||'🚀';
   document.getElementById('pColor').value   =p.color||'#f5a623';
-  document.getElementById('pOrder').value   =p.order??0;
+  document.getElementById('pOrder').value   =p.order||0;
   document.getElementById('pTags').value    =(p.tags||[]).join(', ');
   document.getElementById('pFeatures').value=(p.features||[]).join('\n');
   document.getElementById('pDemo').value    =p.demo||'';
   document.getElementById('pCode').value    =p.code||'';
   document.getElementById('saveMsg').textContent='';
+  _uploadedImages = (p.images && p.images.length) ? p.images.slice() : [];
+  renderImagePreviews();
   document.getElementById('projectFormModal').style.display='flex';
 };
 
 // Save
-document.getElementById('saveProjectBtn').addEventListener('click', async()=>{
-  const title   =document.getElementById('pTitle').value.trim();
-  const desc    =document.getElementById('pDesc').value.trim();
-  const emoji   =document.getElementById('pEmoji').value.trim()||'🚀';
-  const color   =document.getElementById('pColor').value;
-  const order   =parseInt(document.getElementById('pOrder').value)||0;
-  const tags    =document.getElementById('pTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const features=document.getElementById('pFeatures').value.split('\n').map(f=>f.trim()).filter(Boolean);
-  const demo    =document.getElementById('pDemo').value.trim()||'#';
-  const code    =document.getElementById('pCode').value.trim()||'#';
-  const editId  =document.getElementById('editProjectId').value;
-
-  if(!title||!desc){document.getElementById('saveMsg').textContent='Нэр болон тайлбар заавал бөглөнө үү.';return;}
-
-  const btn=document.getElementById('saveProjectBtn');
+document.getElementById('saveProjectBtn').addEventListener('click',function(){
+  var title   =document.getElementById('pTitle').value.trim();
+  var desc    =document.getElementById('pDesc').value.trim();
+  var emoji   =document.getElementById('pEmoji').value.trim()||'🚀';
+  var color   =document.getElementById('pColor').value;
+  var order   =parseInt(document.getElementById('pOrder').value)||0;
+  var tags    =document.getElementById('pTags').value.split(',').map(function(t){return t.trim();}).filter(Boolean);
+  var features=document.getElementById('pFeatures').value.split('\n').map(function(f){return f.trim();}).filter(Boolean);
+  var demo    =document.getElementById('pDemo').value.trim()||'#';
+  var code    =document.getElementById('pCode').value.trim()||'#';
+  var editId  =document.getElementById('editProjectId').value;
+  var images  =_uploadedImages.slice();
+  var sm      =document.getElementById('saveMsg');
+  if(!title||!desc){sm.textContent='Нэр болон тайлбар заавал бөглөнө үү.';return;}
+  var btn=document.getElementById('saveProjectBtn');
   btn.disabled=true; btn.textContent='Хадгалж байна...';
-
-  const data={title,desc,emoji,color,order,tags,features,demo,code,visualType:'custom'};
-
-  if(db){
-    try{
-      const {collection,addDoc,updateDoc,doc,serverTimestamp}=
-        await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      if(editId){
-        await updateDoc(doc(db,'projects',editId),{...data,updatedAt:serverTimestamp()});
-      } else {
-        await addDoc(collection(db,'projects'),{...data,createdAt:serverTimestamp()});
-      }
-    }catch(e){
-      // fallback to localStorage
-      saveToLocal(editId,data);
-    }
-  } else {
-    saveToLocal(editId,data);
-  }
-
-  document.getElementById('saveMsg').textContent='✅ Амжилттай хадгалагдлаа!';
-  btn.disabled=false; btn.textContent='Хадгалах →';
-  setTimeout(()=>{
-    document.getElementById('projectFormModal').style.display='none';
-    loadProjects(); loadDashboard();
-  },900);
+  var data={title:title,desc:desc,emoji:emoji,color:color,order:order,tags:tags,features:features,demo:demo,code:code,visualType:'custom',images:images};
+  fsSaveProject(editId||null, data).then(function(){
+    sm.textContent='✅ Амжилттай хадгалагдлаа!';
+    btn.disabled=false; btn.textContent='Хадгалах →';
+    setTimeout(function(){
+      document.getElementById('projectFormModal').style.display='none';
+      loadProjects(); loadDashboard();
+    },900);
+  });
 });
 
-function saveToLocal(editId, data) {
-  const projects=getLocalProjects();
-  if(editId){
-    const idx=projects.findIndex(p=>p.id===editId);
-    if(idx!==-1) projects[idx]={...projects[idx],...data};
-  } else {
-    projects.push({...data,id:'proj_'+Date.now()});
-  }
-  saveLocalProjects(projects);
-}
-
-document.getElementById('closeProjectForm').addEventListener('click',()=>document.getElementById('projectFormModal').style.display='none');
-document.getElementById('projectFormModal').addEventListener('click',e=>{if(e.target===document.getElementById('projectFormModal'))document.getElementById('projectFormModal').style.display='none';});
+document.getElementById('closeProjectForm').addEventListener('click',function(){document.getElementById('projectFormModal').style.display='none';});
+document.getElementById('projectFormModal').addEventListener('click',function(e){if(e.target===document.getElementById('projectFormModal'))document.getElementById('projectFormModal').style.display='none';});
 
 // Delete
-let _deleteId=null;
-window.startDelete=function(id){_deleteId=id;document.getElementById('confirmModal').style.display='flex';};
-document.getElementById('confirmDelete').addEventListener('click',async()=>{
-  if(!_deleteId)return;
-  if(db){
-    try{
-      const {doc,deleteDoc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      await deleteDoc(doc(db,'projects',_deleteId));
-    }catch(e){
-      const ps=getLocalProjects().filter(p=>p.id!==_deleteId);
-      saveLocalProjects(ps);
-    }
-  } else {
-    const ps=getLocalProjects().filter(p=>p.id!==_deleteId);
-    saveLocalProjects(ps);
-  }
-  _deleteId=null;
-  document.getElementById('confirmModal').style.display='none';
-  loadProjects(); loadDashboard();
+var _delId=null;
+window.startDelete=function(id){_delId=id;document.getElementById('confirmModal').style.display='flex';};
+document.getElementById('confirmDelete').addEventListener('click',function(){
+  if(!_delId) return;
+  fsDeleteProject(_delId).then(function(){
+    _delId=null;
+    document.getElementById('confirmModal').style.display='none';
+    loadProjects(); loadDashboard();
+  });
 });
-document.getElementById('cancelDelete').addEventListener('click',()=>{_deleteId=null;document.getElementById('confirmModal').style.display='none';});
-document.getElementById('confirmModal').addEventListener('click',e=>{if(e.target===document.getElementById('confirmModal')){_deleteId=null;document.getElementById('confirmModal').style.display='none';}});
+document.getElementById('cancelDelete').addEventListener('click',function(){_delId=null;document.getElementById('confirmModal').style.display='none';});
+document.getElementById('confirmModal').addEventListener('click',function(e){if(e.target===document.getElementById('confirmModal')){_delId=null;document.getElementById('confirmModal').style.display='none';}});
 
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 //  MESSAGES
-// ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
 async function loadMessages() {
-  const list=document.getElementById('messagesList');
-  let msgs=[];
-  if(db){
-    try{
-      const {collection,getDocs,orderBy,query}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-      const snap=await getDocs(query(collection(db,'messages'),orderBy('time','desc')));
-      snap.forEach(d=>msgs.push(d.data()));
-    }catch(e){}
-  }
-  if(!msgs.length) msgs=getLocalMessages();
+  var msgs = await fsGetMessages();
+  var list = document.getElementById('messagesList');
   if(!msgs.length){list.innerHTML='<div class="empty-msg">Мессеж байхгүй байна.</div>';return;}
-  list.innerHTML=msgs.map(m=>`
-    <div class="msg-card">
-      <div class="msg-header">
-        <div><div class="msg-name">${m.name||'—'}</div><div class="msg-email">${m.email||'—'}</div></div>
-        <div class="msg-time">${fmtDate(m.time)}</div>
-      </div>
-      <div class="msg-body">${m.message||''}</div>
-    </div>`).join('');
+  list.innerHTML=msgs.map(function(m){
+    return '<div class="msg-card">'+
+      '<div class="msg-header">'+
+        '<div><div class="msg-name">'+(m.name||'—')+'</div><div class="msg-email">'+(m.email||'—')+'</div></div>'+
+        '<div class="msg-time">'+fmtDate(m.time)+'</div>'+
+      '</div>'+
+      '<div class="msg-body">'+(m.message||'')+'</div>'+
+    '</div>';
+  }).join('');
 }
 
-// ── Escape modals ─────────────────────────────────────────
-document.addEventListener('keydown',e=>{
+// ── ESC ───────────────────────────────────────────────────
+document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
     document.getElementById('projectFormModal').style.display='none';
     document.getElementById('confirmModal').style.display='none';
   }
 });
 
-// ── Start ─────────────────────────────────────────────────
-initApp();
+// ── Password toggle ───────────────────────────────────────
+var toggleBtn = document.getElementById('togglePass');
+if (toggleBtn) {
+  toggleBtn.addEventListener('click', function() {
+    var p = document.getElementById('passInput');
+    if (p.type === 'password') { p.type = 'text'; toggleBtn.textContent = '🙈'; }
+    else { p.type = 'password'; toggleBtn.textContent = '👁'; }
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  IMAGE UPLOAD — Base64 хэлбэрт хөрвүүлж хадгална
+// ════════════════════════════════════════════════════
+var _uploadedImages = [];
+
+function resetImageUpload() {
+  _uploadedImages = [];
+  var pr = document.getElementById('imgPreviewRow');
+  if(pr) pr.innerHTML = '';
+}
+
+function renderImagePreviews() {
+  var row = document.getElementById('imgPreviewRow');
+  if(!row) return;
+  row.innerHTML = _uploadedImages.map(function(src, i) {
+    return '<div class="img-preview-item">'+
+      '<img src="'+src+'" alt="зураг '+(i+1)+'"/>'+
+      '<button class="img-preview-del" onclick="removeImg('+i+')" title="Устгах">✕</button>'+
+    '</div>';
+  }).join('');
+}
+
+window.removeImg = function(i) {
+  _uploadedImages.splice(i, 1);
+  renderImagePreviews();
+};
+
+function readFiles(files) {
+  var remaining = 5 - _uploadedImages.length;
+  files = files.slice(0, remaining);
+  if(!files.length) return;
+  var loaded = 0;
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      _uploadedImages.push(e.target.result);
+      loaded++;
+      if (loaded === files.length) renderImagePreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+var fileInput = document.getElementById('imgFileInput');
+if (fileInput) {
+  fileInput.addEventListener('change', function() {
+    readFiles(Array.from(this.files));
+    fileInput.value = '';
+  });
+}
+
+var uploadArea = document.getElementById('imgUploadArea');
+if (uploadArea) {
+  uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.style.borderColor='var(--accent)'; });
+  uploadArea.addEventListener('dragleave', function() { uploadArea.style.borderColor=''; });
+  uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault(); uploadArea.style.borderColor='';
+    readFiles(Array.from(e.dataTransfer.files).filter(function(f){return f.type.startsWith('image/');}));
+  });
+}
